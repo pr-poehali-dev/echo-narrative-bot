@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -29,6 +30,7 @@ interface CharacterProfile {
 }
 
 const Index = () => {
+  const { toast } = useToast();
   const [currentTab, setCurrentTab] = useState('chat');
   const [messages, setMessages] = useState<Message[]>([
     { id: 1, text: 'Привет... Я рада, что ты наконец здесь.', sender: 'ai', timestamp: new Date() }
@@ -47,8 +49,45 @@ const Index = () => {
     past: 'artist',
     secret: 'hidden_past'
   });
+  const [messagesCount, setMessagesCount] = useState(0);
 
   const intimacyProgress = (character.level / 4) * 100;
+
+  useEffect(() => {
+    const userMessages = messages.filter(m => m.sender === 'user').length;
+    if (userMessages > messagesCount) {
+      setMessagesCount(userMessages);
+      checkIntimacyProgress(userMessages);
+    }
+  }, [messages]);
+
+  const checkIntimacyProgress = async (count: number) => {
+    try {
+      const response = await fetch('https://functions.poehali.dev/784d1e08-4944-4cfb-a63d-f61d0e49ab88', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          currentLevel: character.level,
+          messagesCount: count,
+          lastMessages: messages.slice(-10)
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.levelUp && data.currentLevel > character.level) {
+        setCharacter(prev => ({ ...prev, level: data.currentLevel }));
+        
+        toast({
+          title: '💫 Новый уровень отношений!',
+          description: data.milestoneUnlocked || `Вы достигли уровня ${data.currentLevel}`,
+          duration: 5000,
+        });
+      }
+    } catch (error) {
+      console.error('Intimacy tracking error:', error);
+    }
+  };
 
   const archetypes = [
     { id: 'mysterious', label: 'Загадочная', description: 'Глубокая, интроспективная, полная тайн' },
@@ -215,6 +254,15 @@ const Index = () => {
                         <Icon name="Sparkles" size={12} className="mr-1" />
                         {['Знакомство', 'Доверие', 'Близость', 'Интимность'][character.level - 1]}
                       </Badge>
+                    </div>
+                    <div className="mt-3">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                        <span>Прогресс: {messagesCount} сообщений</span>
+                        <span className="text-primary">
+                          {character.level < 4 ? `До след. уровня: ${[10, 25, 50, 100][character.level] - messagesCount}` : 'Максимум'}
+                        </span>
+                      </div>
+                      <Progress value={intimacyProgress} className="h-2" />
                     </div>
                   </div>
                   <Dialog open={isCreatingCharacter} onOpenChange={setIsCreatingCharacter}>

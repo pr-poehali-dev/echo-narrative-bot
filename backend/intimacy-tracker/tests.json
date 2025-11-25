@@ -1,0 +1,41 @@
+{
+  "tests": [
+    {
+      "name": "Test level 1 progress tracking",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "currentLevel": 1,
+        "messagesCount": 5,
+        "lastMessages": [
+          {"sender": "user", "text": "Привет"},
+          {"sender": "ai", "text": "Привет, рада тебя видеть"}
+        ]
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "currentLevel": 1,
+        "levelUp": false,
+        "progressPercent": "number"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Test level up to level 2",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "currentLevel": 1,
+        "messagesCount": 15,
+        "lastMessages": []
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "currentLevel": 2,
+        "levelUp": true,
+        "milestoneUnlocked": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}
