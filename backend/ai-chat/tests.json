@@ -1,0 +1,26 @@
+{
+  "tests": [
+    {
+      "name": "Test AI chat response",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "message": "Привет, как дела?",
+        "character": {
+          "name": "Луна",
+          "archetype": "Загадочная",
+          "past": "Художница",
+          "secret": "Скрывает прошлое",
+          "level": 1
+        },
+        "history": []
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "reply": "string",
+        "model": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

@@ -90,7 +90,7 @@ const Index = () => {
     }
   ];
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
     const newMessage: Message = {
@@ -100,18 +100,52 @@ const Index = () => {
       timestamp: new Date()
     };
 
-    setMessages([...messages, newMessage]);
+    const updatedMessages = [...messages, newMessage];
+    setMessages(updatedMessages);
     setInputMessage('');
 
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: messages.length + 2,
-        text: 'Мне нравится, как ты говоришь... расскажи мне больше.',
+    try {
+      const response = await fetch('https://functions.poehali.dev/47bcc1f0-d373-4761-a2ab-794778f23230', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: newMessage.text,
+          character: character,
+          history: updatedMessages.slice(-10)
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.reply) {
+        const aiResponse: Message = {
+          id: updatedMessages.length + 1,
+          text: data.reply,
+          sender: 'ai',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, aiResponse]);
+      } else {
+        const errorResponse: Message = {
+          id: updatedMessages.length + 1,
+          text: 'Прости, что-то пошло не так... попробуй ещё раз.',
+          sender: 'ai',
+          timestamp: new Date()
+        };
+        setMessages(prev => [...prev, errorResponse]);
+      }
+    } catch (error) {
+      console.error('AI chat error:', error);
+      const errorResponse: Message = {
+        id: updatedMessages.length + 1,
+        text: 'Кажется, у меня проблемы со связью... дай мне секунду.',
         sender: 'ai',
         timestamp: new Date()
       };
-      setMessages(prev => [...prev, aiResponse]);
-    }, 1500);
+      setMessages(prev => [...prev, errorResponse]);
+    }
   };
 
   const handleCreateCharacter = () => {
